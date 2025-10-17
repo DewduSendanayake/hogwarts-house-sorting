@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Hogwarts House Sorting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Hogwarts House Sorting</h1>
+    <div id="quiz"></div>
+    <button id="submit">Get Sorted!</button>
+    <div id="result" class="hidden"></div>
+  </div>
+  <script id="quiz-data" type="application/json">
+    {{ quiz | tojson }}
+  </script>
+  <script>
+    // quiz data injected by flask via templating (read from non-JS script tag)
+    const QUIZ = JSON.parse(document.getElementById('quiz-data').textContent);
+  </script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
+
