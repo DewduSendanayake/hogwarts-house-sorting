@@ -1,26 +1,158 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Hogwarts House Sorting</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/static/css/style.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hogwarts profile</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <meta name="theme-color" content="#0b0b0b" />
 </head>
 <body>
-  <div class="container">
-    <h1>Hogwarts House Sorting</h1>
-    <div id="quiz"></div>
-    <button id="submit">Get Sorted!</button>
-    <div id="result" class="hidden"></div>
+
+<section class="welcome-hero">
+  <div class="welcome-inner">
+    <h1 class="welcome-title">Welcome to Hogwarts!</h1>
+{#    <p class="welcome-tagline">Your magical journey begins here ✨</p>#}
   </div>
-  <script id="quiz-data" type="application/json">
-    {{ quiz | tojson }}
-  </script>
+</section>
+
+{#  <header class="site-header">#}
+{#    <div class="header-wrap">#}
+{#      <h1 class="brand">Hogwarts profile</h1>#}
+{#      <nav class="header-actions">#}
+{#        <button id="btn-view-completed" class="btn">Completed</button>#}
+{#        <button id="btn-finalize" class="btn primary">Build final profile</button>#}
+{#      </nav>#}
+{#    </div>#}
+{#  </header>#}
+
+
+    <section class="profile-intro">
+      <div class="profile-inner">
+        <h2 class="profile-title"> Hello Potterhead 🪄</h2>
+        <p class="profile-sub">
+          Every witch and wizard has a story. <br/> This enchanted scroll will grow with your choices - from your House to your Patronus, wand, and more.
+        </p>
+      </div>
+    </section>
+
+
+  <main class="page">
+    <section class="parts-section">
+      <div class="parts-header">
+        <h2 class="parts-title">✨ Begin Your Journey</h2>
+        <p class="parts-sub">Choose a magical card below- each one unlocks a chapter of your Hogwarts story.</p>
+      </div>
+      <div id="parts-list" class="parts-grid" aria-live="polite"></div>
+    </section>
+
+
+
+    <section id="quiz" class="panel hidden" aria-labelledby="part-title">
+      <div class="quiz-top">
+        <div class="quiz-info">
+          <h2 id="part-title" class="panel-title"></h2>
+          <p id="part-desc" class="muted"></p>
+        </div>
+        <div class="quiz-controls">
+          <button id="btn-prev" class="btn">Back</button>
+          <button id="btn-next" class="btn">Next</button>
+          <button id="btn-submit" class="btn primary">Submit part</button>
+        </div>
+      </div>
+
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div id="question-area"></div>
+    </section>
+
+    <section id="results" class="panel">
+      <h2 class="panel-title">Part results</h2>
+      <div id="results-list"></div>
+    </section>
+
+    <section id="final" class="panel hidden">
+      <h2 class="panel-title">Your final profile</h2>
+
+      <div class="final-grid">
+        <div class="final-item">
+          <span class="label">House</span>
+          <span id="final-house" class="value">—</span>
+          <p id="final-house-desc" class="muted"></p>
+        </div>
+        <div class="final-item">
+          <span class="label">Patronus</span>
+          <span id="final-patronus" class="value">—</span>
+        </div>
+        <div class="final-item">
+          <span class="label">Wand</span>
+          <span id="final-wand" class="value">—</span>
+        </div>
+        <div class="final-item">
+          <span class="label">Bestie</span>
+          <span id="final-bestie" class="value">—</span>
+        </div>
+        <div class="final-item">
+          <span class="label">Rival</span>
+          <span id="final-enemy" class="value">—</span>
+        </div>
+        <div class="final-item">
+          <span class="label">Skill focus</span>
+          <span id="final-skill" class="value">—</span>
+        </div>
+        <div class="final-item">
+          <span class="label">Quidditch role</span>
+          <span id="final-quidditch" class="value">—</span>
+        </div>
+        <div class="final-item">
+          <span class="label">Extras</span>
+          <pre id="final-extras" class="code">—</pre>
+        </div>
+      </div>
+
+      <div class="bars">
+        <div class="bar">
+          <span class="bar-label">Gryffindor</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-gryffindor"></div></div>
+        </div>
+        <div class="bar">
+          <span class="bar-label">Hufflepuff</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-hufflepuff"></div></div>
+        </div>
+        <div class="bar">
+          <span class="bar-label">Ravenclaw</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-ravenclaw"></div></div>
+        </div>
+        <div class="bar">
+          <span class="bar-label">Slytherin</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-slytherin"></div></div>
+        </div>
+      </div>
+
+      <div class="candles">
+        <div class="candle"><div class="flame"></div></div>
+        <div class="candle"><div class="flame"></div></div>
+        <div class="candle"><div class="flame"></div></div>
+      </div>
+
+
+      <div class="final-actions">
+        <button id="btn-retake-all" class="btn">Clear all parts</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">Built with Magic ⚡</p>
+  </footer>
+
   <script>
-    // quiz data injected by flask via templating (read from non-JS script tag)
-    const QUIZ = JSON.parse(document.getElementById('quiz-data').textContent);
+    const QUIZ_PARTS = {{ quiz_parts|tojson }};
   </script>
-  <script src="/static/js/app.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
-
