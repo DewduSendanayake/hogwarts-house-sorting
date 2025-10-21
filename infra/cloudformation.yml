@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Stack to host Hogwarts House Sorting app on a single EC2 instance.
+  The instance pulls a zip from S3 (S3Bucket/S3Key params) and runs it as a systemd service.
+
+Parameters:
+  S3Bucket:
+    Type: String
+    Description: S3 bucket that contains the app zip
+  S3Key:
+    Type: String
+    Description: S3 key (object name) of the app zip
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 instance type to run the app
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+
+Resources:
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP and SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: S3ReadForApp
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${S3Bucket}
+                  - !Sub arn:aws:s3:::${S3Bucket}/*
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EC2InstanceRole
+
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      Comment: "Instance will download app zip from S3 and run the Flask app"
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      KeyName: !Ref KeyName                # ✅ Added KeyName here
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          yum install -y git unzip python3 make gcc
+          python3 -m pip install --upgrade pip
+          mkdir -p /opt/hogwarts
+          cd /opt/hogwarts
+          /usr/bin/aws s3 cp s3://${S3Bucket}/${S3Key} /tmp/app.zip
+          unzip -o /tmp/app.zip -d /opt/hogwarts
+          python3 -m venv /opt/hogwarts/.venv
+          /opt/hogwarts/.venv/bin/pip install --upgrade pip
+          if [ -f /opt/hogwarts/requirements.txt ]; then
+            /opt/hogwarts/.venv/bin/pip install -r /opt/hogwarts/requirements.txt
+          fi
+          cat > /etc/systemd/system/hogwarts.service <<'EOF'
+          [Unit]
+          Description=Hogwarts House Sorting Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory=/opt/hogwarts
+          ExecStart=/opt/hogwarts/.venv/bin/gunicorn application:app -b 0.0.0.0:80 --chdir /opt/hogwarts
+          Restart=always
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          systemctl daemon-reload
+          systemctl enable hogwarts.service
+          systemctl start hogwarts.service
+
+Outputs:
+  PublicIp:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt WebServerInstance.PublicIp
+  PublicDNS:
+    Description: Public DNS name of the EC2 instance
+    Value: !GetAtt WebServerInstance.PublicDnsName
